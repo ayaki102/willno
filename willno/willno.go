@@ -1,7 +1,6 @@
 package willno
 
 import (
-	"go/token"
 	"strings"
 )
 
