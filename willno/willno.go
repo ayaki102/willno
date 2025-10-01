@@ -114,7 +114,7 @@ func (p *Parsed) Filter(tokenType string, predicate func(Value) bool) []Value {
 
 // private stuff that user won't see WHOLE IMPLEMENTATIONS
 func (pf *parsedFile) Get(tokenType, name string) (any, bool) {
-	return nil, false
+	return pf.tokens[tokenType][name], true
 }
 
 func (pf *parsedFile) GetString(tokenType, name string) (string, bool) {
@@ -143,9 +143,13 @@ func (pf *parsedFile) GetOr(tokenType, name string, def any) any {
 }
 
 func (pf *parsedFile) All(tokenType string) []Value {
-	return nil
-}
+	valueSlice := []Value{}
+	for _, elems := range pf.tokens {
+		for _, k := range elems {
+			valueSlice = append(valueSlice, k)
 
-func (pf *parsedFile) Filter(tokenType string, predicate func(Value) bool) []Value {
-	return nil
+		}
+
+	}
+	return valueSlice
 }
