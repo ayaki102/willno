@@ -1,0 +1,54 @@
+// will just steal shit from here
+
+// ---------------------------
+// Token: internal representation of each parsed element
+// ---------------------------
+type Token struct {
+	Type        string // "keyword", "literal", "comment", "unknown"
+	Name        string // identifier name
+	LiteralType string // only set for literals
+	Value       string // raw content from file
+}
+
+// ---------------------------
+// Parser: entry point for UX
+// ---------------------------
+type Parser struct {
+	languages map[string]*Language
+}
+
+// ---------------------------
+// Optional: Variable handle for fast ergonomic access
+// ---------------------------
+type VarHandle[T any] struct {
+	value T
+}
+
+func (v *VarHandle[T]) Set(val T) { v.value = val }
+func (v *VarHandle[T]) Get() T    { return v.value }
+
+// token clasification <- kinda nuts
+// token := nextToken(file)
+// if parser.IsLiteral(token.Value) {
+//     token.Type = Literal
+//     token.LiteralType = detectLiteralType(token.Value) // "string", "number", etc.
+// } else if parser.IsKeyword(token.Value) {
+//     token.Type = Keyword
+// } else if parser.IsComment(token.Value) {
+//     token.Type = Comment
+// } else {
+//     // Unknown token
+//     token.Type = Unknown
+// }
+//
+// for getting values parsed by lang implement Get(type, value)
+// 	QUALITY OF LIFE FUNCTIONS
+// parsed.GetString("variable", "x")   // returns string
+// parsed.GetNumber("variable", "y")   // returns float64/int
+// func (pf *ParsedFile) GetOr[T any](tokenType, name string, def T) T {
+//     if val, ok := pf.Get[T](tokenType, name); ok {
+//         return val
+//     }
+//     return def
+// }
+// age := parsed.GetOr[int]("variable", "age", 18)

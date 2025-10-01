@@ -1,14 +1,27 @@
 package willno
 
+import (
+	"go/token"
+	"strings"
+)
+
 const (
 	StringLiteral = "string"
 	NumberLiteral = "number"
 	BoolLiteral   = "boolean"
 )
 
-// ---------------------------
+const (
+	Var = "variable"
+	Fn  = "function"
+)
+
+// LanguageBuilder: for chaining API
+type LanguageBuilder struct {
+	lang *language
+}
+
 // Core Value representation
-// ---------------------------
 type Value struct {
 	Name        string // identifier name (variable, function, etc.)
 	Type        string // token type: "variable", "function", "literal", "comment", etc.
@@ -16,19 +29,95 @@ type Value struct {
 	Value       any    // actual parsed value
 }
 
-// ---------------------------
-// ParsedFile: end-user access
-// ---------------------------
-type ParsedFile struct {
+// language: internal representation of a user-defined language
+// end user won't see this
+type language struct {
+	name     string            // language identifier
+	fileExts string            // optional: file extensions
+	keywords map[string]string // logical type -> actual keyword ("variable" -> "let")
+	comments []string          // comment patterns, e.g., "//", "#"
+	literals []string          // supported literal types: "string", "number", "boolean", or custom
+}
+
+type Parsed struct {
+	pf *parsedFile
+}
+
+// parsedFile: end-user access
+type parsedFile struct {
 	tokens map[string]map[string]Value // type -> name -> Value
 }
 
-// Example QoL access methods (stub implementations that compile)
-func (pf *ParsedFile) Get(tokenType, name string) (any, bool) {
+func ParseFile(name string) *LanguageBuilder {
+	filename := strings.Split(name, ".")
+	return &LanguageBuilder{
+		lang: &language{
+			// only reasonable way to do this lol
+			name:     filename[0],
+			fileExts: filename[1],
+			keywords: map[string]string{},
+			comments: []string{},
+			literals: []string{},
+		},
+	}
+}
+
+func (lb *LanguageBuilder) AddKeyword(literal, value string) *LanguageBuilder {
+	lb.lang.keywords[literal] = value
+	return lb
+}
+
+func (lb *LanguageBuilder) AddComment(comment string) *LanguageBuilder {
+	lb.lang.comments = append(lb.lang.comments, comment)
+	return lb
+}
+
+// this is used to declare types that are "supported" bu user's lang
+func (lb *LanguageBuilder) AddLiteral(lit string) *LanguageBuilder {
+	lb.lang.literals = append(lb.lang.literals, lit)
+	return lb
+}
+
+func (lb *LanguageBuilder) Parse() *Parsed {
+	// this will be from file
+	// whole ass parser
+	return &Parsed{
+		pf: &parsedFile{
+			tokens: map[string]map[string]Value{},
+		},
+	}
+}
+
+func (p *Parsed) Get(tokenType, name string) (any, bool) {
+	return p.pf.Get(tokenType, name)
+}
+
+func (p *Parsed) GetString(tokenType, name string) (string, bool) {
+	return p.pf.GetString(tokenType, name)
+}
+
+func (p *Parsed) GetNumber(tokenType, name string) (float64, bool) {
+	return p.pf.GetNumber(tokenType, name)
+}
+
+func (p *Parsed) GetOr(tokenType, name string, def any) any {
+	return p.pf.GetOr(tokenType, name, def)
+}
+
+func (p *Parsed) All(tokenType string) []Value {
+	return p.pf.All(tokenType)
+}
+
+func (p *Parsed) Filter(tokenType string, predicate func(Value) bool) []Value {
+	return p.pf.Filter(tokenType, predicate)
+}
+
+// private stuff that user won't see WHOLE IMPLEMENTATIONS
+func (pf *parsedFile) Get(tokenType, name string) (any, bool) {
 	return nil, false
 }
 
-func (pf *ParsedFile) GetString(tokenType, name string) (string, bool) {
+func (pf *parsedFile) GetString(tokenType, name string) (string, bool) {
 	val, ok := pf.Get(tokenType, name)
 	if !ok {
 		return "", false
@@ -37,7 +126,7 @@ func (pf *ParsedFile) GetString(tokenType, name string) (string, bool) {
 	return s, ok
 }
 
-func (pf *ParsedFile) GetNumber(tokenType, name string) (float64, bool) {
+func (pf *parsedFile) GetNumber(tokenType, name string) (float64, bool) {
 	val, ok := pf.Get(tokenType, name)
 	if !ok {
 		return 0, false
@@ -46,94 +135,17 @@ func (pf *ParsedFile) GetNumber(tokenType, name string) (float64, bool) {
 	return n, ok
 }
 
-func (pf *ParsedFile) GetOr(tokenType, name string, def any) any {
+func (pf *parsedFile) GetOr(tokenType, name string, def any) any {
 	if val, ok := pf.Get(tokenType, name); ok {
 		return val
 	}
 	return def
 }
 
-func (pf *ParsedFile) All(tokenType string) []Value {
+func (pf *parsedFile) All(tokenType string) []Value {
 	return nil
 }
 
-func (pf *ParsedFile) Filter(tokenType string, predicate func(Value) bool) []Value {
+func (pf *parsedFile) Filter(tokenType string, predicate func(Value) bool) []Value {
 	return nil
 }
-
-// ---------------------------
-// Language: internal representation of a user-defined language
-// ---------------------------
-type Language struct {
-	Name     string            // language identifier
-	FileExts []string          // optional: file extensions
-	Keywords map[string]string // logical type -> actual keyword ("variable" -> "let")
-	Comments []string          // comment patterns, e.g., "//", "#"
-	Literals []string          // supported literal types: "string", "number", "boolean", or custom
-}
-
-func NewLanguage() *LanguageBuilder {
-	return &LanguageBuilder{
-		lang: &Language{},
-	}
-}
-
-// ---------------------------
-// Token: internal representation of each parsed element
-// ---------------------------
-type Token struct {
-	Type        string // "keyword", "literal", "comment", "unknown"
-	Name        string // identifier name
-	LiteralType string // only set for literals
-	Value       string // raw content from file
-}
-
-// ---------------------------
-// Parser: entry point for UX
-// ---------------------------
-type Parser struct {
-	languages map[string]*Language
-}
-
-// ---------------------------
-// LanguageBuilder: for chaining API
-// ---------------------------
-type LanguageBuilder struct {
-	lang *Language
-}
-
-// ---------------------------
-// Optional: Variable handle for fast ergonomic access
-// ---------------------------
-type VarHandle[T any] struct {
-	value T
-}
-
-func (v *VarHandle[T]) Set(val T) { v.value = val }
-func (v *VarHandle[T]) Get() T    { return v.value }
-
-// token clasification <- kinda nuts
-// token := nextToken(file)
-// if parser.IsLiteral(token.Value) {
-//     token.Type = Literal
-//     token.LiteralType = detectLiteralType(token.Value) // "string", "number", etc.
-// } else if parser.IsKeyword(token.Value) {
-//     token.Type = Keyword
-// } else if parser.IsComment(token.Value) {
-//     token.Type = Comment
-// } else {
-//     // Unknown token
-//     token.Type = Unknown
-// }
-//
-// for getting values parsed by lang implement Get(type, value)
-// 	QUALITY OF LIFE FUNCTIONS
-// parsed.GetString("variable", "x")   // returns string
-// parsed.GetNumber("variable", "y")   // returns float64/int
-// func (pf *ParsedFile) GetOr[T any](tokenType, name string, def T) T {
-//     if val, ok := pf.Get[T](tokenType, name); ok {
-//         return val
-//     }
-//     return def
-// }
-// age := parsed.GetOr[int]("variable", "age", 18)
