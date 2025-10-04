@@ -76,8 +76,22 @@ func (lb *LanguageBuilder) AddKeyword(value string) *LanguageBuilder {
 	return lb
 }
 
+func (lb *LanguageBuilder) AddKeywords(values ...string) *LanguageBuilder {
+	for _, v := range values {
+		lb.AddKeyword(v)
+	}
+	return lb
+}
+
 func (lb *LanguageBuilder) AddComment(comment string) *LanguageBuilder {
 	lb.Lang.Comments = append(lb.Lang.Comments, comment)
+	return lb
+}
+
+func (lb *LanguageBuilder) AddComments(comments ...string) *LanguageBuilder {
+	for _, c := range comments {
+		lb.AddComment(c)
+	}
 	return lb
 }
 
@@ -85,6 +99,15 @@ func (lb *LanguageBuilder) AddComment(comment string) *LanguageBuilder {
 func (lb *LanguageBuilder) AddLiteral(lit string) *LanguageBuilder {
 	lb.Lang.Literals = append(lb.Lang.Literals, lit)
 	return lb
+}
+
+func (lb *LanguageBuilder) AddLiterals(literals ...string) *LanguageBuilder {
+	for _, l := range literals {
+		lb.AddLiteral(l)
+	}
+
+	return lb
+
 }
 
 func (lb *LanguageBuilder) Parse() (*Parsed, error) {
