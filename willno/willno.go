@@ -1,6 +1,8 @@
 package willno
 
 import (
+	"fmt"
+	"os"
 	"slices"
 	"strings"
 )
@@ -32,11 +34,10 @@ type Value struct {
 // Language: internal representation of a user-defined Language
 // end user won't see this
 type Language struct {
-	name     string   // language identifier
-	fileExts string   // optional: file extensions
-	Keywords []string // logical type -> actual keyword ("variable" -> "let")
-	Comments []string // comment patterns, e.g., "//", "#"
-	Literals []string // supported literal types: "string", "number", "boolean", or custom
+	source_file string   // language identifier
+	Keywords    []string // logical type -> actual keyword ("variable" -> "let")
+	Comments    []string // comment patterns, e.g., "//", "#"
+	Literals    []string // supported literal types: "string", "number", "boolean", or custom
 }
 
 type Parsed struct {
@@ -57,11 +58,10 @@ func ParseFile(name string) *LanguageBuilder {
 	return &LanguageBuilder{
 		Lang: &Language{
 			// only reasonable way to do this lol
-			name:     filename[0],
-			fileExts: filename[1],
-			Keywords: []string{},
-			Comments: []string{},
-			Literals: []string{},
+			source_file: filename[0],
+			Keywords:    []string{},
+			Comments:    []string{},
+			Literals:    []string{},
 		},
 	}
 }
@@ -87,14 +87,18 @@ func (lb *LanguageBuilder) AddLiteral(lit string) *LanguageBuilder {
 	return lb
 }
 
-func (lb *LanguageBuilder) Parse() *Parsed {
-	// this will be from file
-	// whole ass parser
+func (lb *LanguageBuilder) Parse() (*Parsed, error) {
+	cont, err := os.ReadFile(lb.Lang.source_file)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(string(cont))
+
 	return &Parsed{
 		pf: &parsedFile{
 			tokens: map[string]map[string]Value{},
 		},
-	}
+	}, nil
 }
 
 func (p *Parsed) Get(tokenType, name string) (any, bool) {

@@ -1,20 +1,27 @@
 package main
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/ayaki102/willNo/willno"
 )
 
 func main() {
 	// API concept
 	parser := willno.ParseFile("myLang.com"). // THIS IS BASE OF API
-							AddKeyword(willno.Var, "let").
-							AddKeyword(willno.Fn, "fn").
+							AddKeyword("let").
+							AddKeyword("fn").
 							AddComment("//").
 							AddComment("#").
 							AddLiteral(willno.StringLiteral).
 							AddLiteral(willno.NumberLiteral)
 
-	parsed := parser.Parse() // for best should it return *ParsedFile struct?
+	parsed, err := parser.Parse()
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println(parsed)
 	// or shoudl it also be wrraped so i can call parsed.Get() etc etc
 	// parsed.Get("variable", "X")
 }
